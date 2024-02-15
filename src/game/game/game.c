@@ -22,6 +22,11 @@
 #include "global/vars.h"
 #include "log.h"
 
+#include "game/clock.h"
+#include <SDL2/SDL_stdinc.h>
+#include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_thread.h>
+
 #define FRAME_BUFFER(key)                                                      \
     do {                                                                       \
         Game_DrawScene(true);                                                  \
@@ -29,107 +34,96 @@
         Output_DumpScreen();                                                   \
     } while (g_Input.key);
 
-static const int32_t m_AnimationRate = 0x8000;
-static int32_t m_FrameCount = 0;
 static GAME_STATUS m_CurrentStatus = GS_INITIAL;
 
 static int32_t Game_Control(int32_t nframes, GAMEFLOW_LEVEL_TYPE level_type);
 
+static SDL_mutex *mutex;
 static int32_t Game_Control(int32_t nframes, GAMEFLOW_LEVEL_TYPE level_type)
 {
     int32_t return_val = 0;
-    if (nframes > MAX_FRAMES) {
-        nframes = MAX_FRAMES;
+    Lara_CheckCheatMode();
+    if (g_LevelComplete) {
+        return GF_NOP_BREAK;
     }
 
-    m_FrameCount += m_AnimationRate * nframes;
-    while (m_FrameCount >= 0) {
-        Lara_CheckCheatMode();
-        if (g_LevelComplete) {
-            return GF_NOP_BREAK;
+    Input_Update();
+    Shell_ProcessInput();
+    Game_ProcessInput();
+
+    if (level_type == GFL_DEMO) {
+        if (g_Input.any) {
+            return GF_EXIT_TO_TITLE;
         }
+        if (!Game_Demo_ProcessInput()) {
+            return GF_EXIT_TO_TITLE;
+        }
+    }
 
-        Input_Update();
-        Shell_ProcessInput();
-        Game_ProcessInput();
-
+    if (g_Lara.death_timer > DEATH_WAIT
+        || (g_Lara.death_timer > DEATH_WAIT_MIN && g_Input.any
+            && !g_Input.fly_cheat)
+        || g_OverlayFlag == 2) {
         if (level_type == GFL_DEMO) {
-            if (g_Input.any) {
-                return GF_EXIT_TO_TITLE;
-            }
-            if (!Game_Demo_ProcessInput()) {
-                return GF_EXIT_TO_TITLE;
-            }
+            return GF_EXIT_TO_TITLE;
         }
-
-        if (g_Lara.death_timer > DEATH_WAIT
-            || (g_Lara.death_timer > DEATH_WAIT_MIN && g_Input.any
-                && !g_Input.fly_cheat)
-            || g_OverlayFlag == 2) {
-            if (level_type == GFL_DEMO) {
-                return GF_EXIT_TO_TITLE;
+        if (g_OverlayFlag == 2) {
+            g_OverlayFlag = 1;
+            return_val = Inv_Display(INV_DEATH_MODE);
+            if (return_val != GF_NOP) {
+                return return_val;
             }
-            if (g_OverlayFlag == 2) {
-                g_OverlayFlag = 1;
-                return_val = Inv_Display(INV_DEATH_MODE);
-                if (return_val != GF_NOP) {
-                    return return_val;
-                }
-            } else {
-                g_OverlayFlag = 2;
-            }
+        } else {
+            g_OverlayFlag = 2;
         }
-
-        if ((g_InputDB.option || g_Input.save || g_Input.load
-             || g_OverlayFlag <= 0)
-            && !g_Lara.death_timer) {
-            if (g_Camera.type == CAM_CINEMATIC) {
-                g_OverlayFlag = 0;
-            } else if (g_OverlayFlag > 0) {
-                if (g_Input.load) {
-                    g_OverlayFlag = -1;
-                } else if (g_Input.save) {
-                    g_OverlayFlag = -2;
-                } else {
-                    g_OverlayFlag = 0;
-                }
-            } else {
-                if (g_OverlayFlag == -1) {
-                    return_val = Inv_Display(INV_LOAD_MODE);
-                } else if (g_OverlayFlag == -2) {
-                    return_val = Inv_Display(INV_SAVE_MODE);
-                } else {
-                    return_val = Inv_Display(INV_GAME_MODE);
-                }
-
-                g_OverlayFlag = 1;
-                if (return_val != GF_NOP) {
-                    return return_val;
-                }
-            }
-        }
-
-        if (!g_Lara.death_timer && g_InputDB.pause) {
-            if (Game_Pause()) {
-                return GF_EXIT_TO_TITLE;
-            }
-        }
-
-        Item_Control();
-        Effect_Control();
-
-        Lara_Control();
-        Lara_Hair_Control();
-
-        Camera_Update();
-        Sound_ResetAmbient();
-        Effect_RunActiveFlipEffect();
-        Sound_UpdateEffects();
-        g_GameInfo.current[g_CurrentLevel].stats.timer++;
-        Overlay_BarHealthTimerTick();
-
-        m_FrameCount -= 0x10000;
     }
+
+    if ((g_InputDB.option || g_Input.save || g_Input.load || g_OverlayFlag <= 0)
+        && !g_Lara.death_timer) {
+        if (g_Camera.type == CAM_CINEMATIC) {
+            g_OverlayFlag = 0;
+        } else if (g_OverlayFlag > 0) {
+            if (g_Input.load) {
+                g_OverlayFlag = -1;
+            } else if (g_Input.save) {
+                g_OverlayFlag = -2;
+            } else {
+                g_OverlayFlag = 0;
+            }
+        } else {
+            if (g_OverlayFlag == -1) {
+                return_val = Inv_Display(INV_LOAD_MODE);
+            } else if (g_OverlayFlag == -2) {
+                return_val = Inv_Display(INV_SAVE_MODE);
+            } else {
+                return_val = Inv_Display(INV_GAME_MODE);
+            }
+
+            g_OverlayFlag = 1;
+            if (return_val != GF_NOP) {
+                return return_val;
+            }
+        }
+    }
+
+    if (!g_Lara.death_timer && g_InputDB.pause) {
+        if (Game_Pause()) {
+            return GF_EXIT_TO_TITLE;
+        }
+    }
+
+    Item_Control();
+    Effect_Control();
+
+    Lara_Control();
+    Lara_Hair_Control();
+
+    Camera_Update();
+    Sound_ResetAmbient();
+    Effect_RunActiveFlipEffect();
+    Sound_UpdateEffects();
+    g_GameInfo.current[g_CurrentLevel].stats.timer++;
+    Overlay_BarHealthTimerTick();
 
     return GF_NOP;
 }
@@ -322,6 +316,39 @@ int32_t Game_Stop(void)
     }
 }
 
+const int GAME_FPS = 30;
+const int GAME_TICKS_PER_FRAME = 1000 / GAME_FPS;
+const int SCREEN_FPS = 60;
+const int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+
+static int RenderThread(void *arg)
+{
+    // Get performance counter frequency
+    double perfCounterFreq = (double)(SDL_GetPerformanceFrequency());
+
+    int frame = 0;
+    while (true) {
+        Uint64 startTicks = SDL_GetPerformanceCounter();
+
+        SDL_LockMutex(mutex);
+        Game_Control(frame / 2, (GAMEFLOW_LEVEL_TYPE)arg);
+        SDL_UnlockMutex(mutex);
+
+        Uint64 endTicks = SDL_GetPerformanceCounter();
+        double frameTime = (endTicks - startTicks) / perfCounterFreq * 1000.0;
+
+        // If the frame finished early, delay the next frame
+        if (frameTime < GAME_TICKS_PER_FRAME) {
+            SDL_Delay(GAME_TICKS_PER_FRAME - frameTime);
+        }
+        LOG_DEBUG("X");
+
+        frame++;
+    }
+
+    return 0;
+}
+
 int32_t Game_Loop(GAMEFLOW_LEVEL_TYPE level_type)
 {
     g_OverlayFlag = 1;
@@ -340,25 +367,30 @@ int32_t Game_Loop(GAMEFLOW_LEVEL_TYPE level_type)
         && g_CurrentLevel != g_GameFlow.first_level_num
         && g_CurrentLevel != g_GameFlow.gym_level_num;
 
+    mutex = SDL_CreateMutex();
+    SDL_CreateThread(RenderThread, "render_thread", (void *)level_type);
+
+    double perfCounterFreq = (double)(SDL_GetPerformanceFrequency());
     int32_t nframes = 1;
     int32_t ret;
+    Game_Control(1, level_type);
     while (1) {
-        ret = Game_Control(nframes, level_type);
-        if (ret != GF_NOP) {
-            break;
-        }
-        nframes = Game_ProcessFrame();
+        Uint64 startTicks = SDL_GetPerformanceCounter();
+        SDL_LockMutex(mutex);
+        Game_ProcessFrame();
+        SDL_UnlockMutex(mutex);
+        Clock_SyncTicks(1);
+        Uint64 endTicks = SDL_GetPerformanceCounter();
+        double frameTime = (endTicks - startTicks) / perfCounterFreq * 1000.0;
 
-        if (ask_for_save) {
-            int32_t return_val = Inv_Display(INV_SAVE_CRYSTAL_MODE);
-            if (return_val != GF_NOP) {
-                Savegame_Save(g_GameInfo.current_save_slot, &g_GameInfo);
-                Config_Write();
-            }
-            ask_for_save = false;
+        // If the frame finished early, delay the next frame
+        if (frameTime < SCREEN_TICKS_PER_FRAME) {
+            SDL_Delay(SCREEN_TICKS_PER_FRAME - frameTime);
         }
+        LOG_DEBUG("O");
     }
 
+    SDL_DestroyMutex(mutex);
     Sound_StopAllSamples();
     Music_Stop();
 

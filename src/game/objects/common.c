@@ -1,5 +1,7 @@
 #include "game/objects/common.h"
 
+#include "log.h"
+
 #include "config.h"
 #include "game/collide.h"
 #include "game/inventory.h"
@@ -260,6 +262,7 @@ void Object_DrawPickupItem(ITEM_INFO *item)
             }
         } else {
             // This should never happen but is here "just in case".
+            LOG_DEBUG("uh");
             Matrix_InitInterpolate(frac, rate);
             Matrix_TranslateRel_ID(
                 frmptr[0][FRAME_POS_X], frmptr[0][FRAME_POS_Y],
