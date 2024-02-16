@@ -44,7 +44,6 @@ static int32_t m_StartLevel;
 static bool m_StartDemo;
 static int32_t m_StartMS;
 static TEXTSTRING *m_VersionText = NULL;
-static int16_t m_InvNFrames = 2;
 static int16_t m_CompassNeedle = 0;
 static int16_t m_CompassSpeed = 0;
 static CAMERA_INFO m_OldCamera;
@@ -60,6 +59,7 @@ static void Inv_DrawItem(INVENTORY_ITEM *inv_item);
 
 static void Phase_Inventory_Start(void *arg);
 static void Phase_Inventory_End(void);
+static GAMEFLOW_OPTION Phase_Inventory_ControlFrame(void);
 static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes);
 static void Phase_Inventory_Draw(void);
 
@@ -326,7 +326,7 @@ static void Inv_DrawItem(INVENTORY_ITEM *inv_item)
     if (motion->status == RNG_DONE) {
         g_LsAdder = LOW_LIGHT;
     } else if (inv_item == ring->list[ring->current_object]) {
-        for (int j = 0; j < m_InvNFrames; j++) {
+        for (int j = 0; j < Clock_GetFrameAdvance(); j++) {
             if (ring->rotating) {
                 g_LsAdder = LOW_LIGHT;
                 if (inv_item->y_rot < 0) {
@@ -360,7 +360,7 @@ static void Inv_DrawItem(INVENTORY_ITEM *inv_item)
         }
     } else {
         g_LsAdder = LOW_LIGHT;
-        for (int j = 0; j < m_InvNFrames; j++) {
+        for (int j = 0; j < Clock_GetFrameAdvance(); j++) {
             if (inv_item->y_rot < 0) {
                 inv_item->y_rot += 256;
             } else if (inv_item->y_rot > 0) {
@@ -490,7 +490,6 @@ static void Phase_Inventory_Start(void *arg)
     m_PassportModeReady = false;
     m_StartLevel = -1;
     m_StartDemo = false;
-    m_InvNFrames = 2;
     Inv_Construct();
 
     if (!g_Config.enable_music_in_inventory && g_InvMode != INV_TITLE_MODE) {
@@ -540,14 +539,13 @@ static void Phase_Inventory_Start(void *arg)
         Clock_SyncTicks();
         Output_FadeResetToBlack();
         // make main menu fades faster
-        Output_FadeSetSpeed(2.0);
         Output_FadeToTransparent(true);
     } else {
         Output_FadeToSemiBlack(true);
     }
 }
 
-static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
+static GAMEFLOW_OPTION Phase_Inventory_ControlFrame(void)
 {
     RING_INFO *ring = &m_Ring;
     IMOTION_INFO *motion = &m_Motion;
@@ -585,7 +583,7 @@ static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
 
     m_StartLevel = g_LevelComplete ? g_GameInfo.select_level_num : -1;
 
-    for (int i = 0; i < m_InvNFrames; i++) {
+    for (int i = 0; i < Clock_GetFrameAdvance(); i++) {
         if (g_IDelay) {
             if (g_IDCount) {
                 g_IDCount--;
@@ -603,7 +601,8 @@ static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
             || (ring->type == RT_OPTION && g_InvMainObjects));
 
     if (g_Config.enable_timer_in_inventory) {
-        g_GameInfo.current[g_CurrentLevel].stats.timer += m_InvNFrames / 2;
+        g_GameInfo.current[g_CurrentLevel].stats.timer +=
+            Clock_IsControlFrame();
     }
 
     if (ring->rotating) {
@@ -863,7 +862,7 @@ static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
         }
 
         bool busy = false;
-        for (int j = 0; j < m_InvNFrames; j++) {
+        for (int j = 0; j < Clock_GetFrameAdvance(); j++) {
             busy = false;
             if (inv_item->y_rot == inv_item->y_rot_sel) {
                 busy = Inv_AnimateItem(inv_item);
@@ -926,7 +925,7 @@ static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
 
     case RNG_CLOSING_ITEM: {
         INVENTORY_ITEM *inv_item = ring->list[ring->current_object];
-        for (int j = 0; j < m_InvNFrames; j++) {
+        for (int j = 0; j < Clock_GetFrameAdvance(); j++) {
             if (!Inv_AnimateItem(inv_item)) {
                 if (inv_item->object_number == O_PASSPORT_OPTION) {
                     inv_item->object_number = O_PASSPORT_CLOSED;
@@ -992,6 +991,17 @@ static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
     return GF_PHASE_CONTINUE;
 }
 
+static GAMEFLOW_OPTION Phase_Inventory_Control(int32_t nframes)
+{
+    for (int32_t i = 0; i < nframes; i++) {
+        GAMEFLOW_OPTION result = Phase_Inventory_ControlFrame();
+        if (result != GF_PHASE_CONTINUE) {
+            return result;
+        }
+    }
+    return GF_PHASE_CONTINUE;
+}
+
 static void Phase_Inventory_End(void)
 {
     if (g_Config.enable_buffering) {
@@ -1004,15 +1014,8 @@ static void Phase_Inventory_Draw(void)
     RING_INFO *ring = &m_Ring;
     IMOTION_INFO *motion = &m_Motion;
     Inv_Draw(ring, motion);
+    Output_AnimateFades();
     Text_Draw();
-}
-
-static int32_t Phase_Inventory_Wait(void)
-{
-    m_InvNFrames = Clock_SyncTicks();
-    Output_AnimateFades(m_InvNFrames);
-    g_Camera.number_frames = m_InvNFrames;
-    return m_InvNFrames;
 }
 
 PHASER g_InventoryPhaser = {
@@ -1020,5 +1023,5 @@ PHASER g_InventoryPhaser = {
     .end = Phase_Inventory_End,
     .control = Phase_Inventory_Control,
     .draw = Phase_Inventory_Draw,
-    .wait = Phase_Inventory_Wait,
+    .wait = NULL,
 };

@@ -1,5 +1,7 @@
 #include "game/game.h"
 
+#include "game/camera.h"
+#include "game/interpolation.h"
 #include "game/lara/lara_hair.h"
 #include "game/output.h"
 #include "game/overlay.h"
@@ -13,6 +15,9 @@
 
 void Game_DrawScene(bool draw_overlay)
 {
+    Interpolation_Commit();
+    Camera_Draw();
+
     if (g_Objects[O_LARA].loaded) {
         Room_DrawAllRooms(g_Camera.pos.room_number);
         if (draw_overlay) {

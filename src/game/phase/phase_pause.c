@@ -11,6 +11,7 @@
 #include "game/sound.h"
 #include "game/text.h"
 #include "global/types.h"
+#include "global/vars.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -180,6 +181,7 @@ static GAMEFLOW_OPTION Phase_Pause_Control(int32_t nframes)
 static void Phase_Pause_Draw(void)
 {
     Game_DrawScene(false);
+    Output_AnimateFades();
     Text_Draw();
 }
 

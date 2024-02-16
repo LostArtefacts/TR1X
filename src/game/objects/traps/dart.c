@@ -99,10 +99,8 @@ void DartEmitter_Control(int16_t item_num)
         if (item->current_anim_state == DART_EMITTER_IDLE) {
             item->goal_anim_state = DART_EMITTER_FIRE;
         }
-    } else {
-        if (item->current_anim_state == DART_EMITTER_FIRE) {
-            item->goal_anim_state = DART_EMITTER_IDLE;
-        }
+    } else if (item->current_anim_state == DART_EMITTER_FIRE) {
+        item->goal_anim_state = DART_EMITTER_IDLE;
     }
 
     if (item->current_anim_state == DART_EMITTER_FIRE

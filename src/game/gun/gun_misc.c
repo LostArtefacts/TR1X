@@ -363,7 +363,7 @@ void Gun_AimWeapon(WEAPON_INFO *winfo, LARA_ARM *arm)
         desty = 0;
     }
 
-    curr = arm->y_rot;
+    curr = arm->rot.y;
     if (curr >= desty - speed && curr <= speed + desty) {
         curr = desty;
     } else if (curr < desty) {
@@ -371,9 +371,9 @@ void Gun_AimWeapon(WEAPON_INFO *winfo, LARA_ARM *arm)
     } else {
         curr -= speed;
     }
-    arm->y_rot = curr;
+    arm->rot.y = curr;
 
-    curr = arm->x_rot;
+    curr = arm->rot.x;
     if (curr >= destx - speed && curr <= speed + destx) {
         curr = destx;
     } else if (curr < destx) {
@@ -381,9 +381,9 @@ void Gun_AimWeapon(WEAPON_INFO *winfo, LARA_ARM *arm)
     } else {
         curr -= speed;
     }
-    arm->x_rot = curr;
+    arm->rot.x = curr;
 
-    arm->z_rot = 0;
+    arm->rot.z = 0;
 }
 
 int32_t Gun_FireWeapon(

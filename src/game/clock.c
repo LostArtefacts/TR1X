@@ -1,6 +1,7 @@
 // IWYU pragma: no_include <bits/types/struct_tm.h>
 #include "game/clock.h"
 
+#include "game/interpolation.h"
 #include "game/phase/phase.h"
 #include "global/vars.h"
 #include "log.h"
@@ -57,4 +58,49 @@ void Clock_GetDateTime(char *date_time)
         date_time, "%04d%02d%02d_%02d%02d%02d", tptr->tm_year + 1900,
         tptr->tm_mon + 1, tptr->tm_mday, tptr->tm_hour, tptr->tm_min,
         tptr->tm_sec);
+}
+
+void Clock_SetTickProgress(double progress)
+{
+    m_Progress = progress;
+}
+
+double Clock_GetTickProgress(void)
+{
+    if (!Interpolation_IsEnabled()) {
+        return 1.0;
+    }
+    return m_Progress;
+}
+
+int32_t Clock_GetLogicalFrame(void)
+{
+    return Clock_GetMS() * LOGIC_FPS / 1000;
+}
+
+int32_t Clock_GetDrawFrame(void)
+{
+    return Clock_GetMS() * g_Config.rendering.fps / 1000;
+}
+
+bool Clock_IsControlFrame(void)
+{
+    if (g_Config.rendering.fps == 30) {
+        return true;
+    }
+    return Clock_GetDrawFrame() % 2 == 0;
+}
+
+int32_t Clock_GetFrameAdvance(void)
+{
+    return g_Config.rendering.fps == 30 ? 2 : 1;
+}
+
+double Clock_GetFrameAdvanceAdjusted(void)
+{
+    double frames = Clock_GetFrameAdvance();
+    if (Phase_Get() != PHASE_INVENTORY || g_InvMode != INV_TITLE_MODE) {
+        frames /= 2.0;
+    }
+    return frames;
 }

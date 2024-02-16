@@ -276,9 +276,9 @@ static void Savegame_Legacy_WriteArm(LARA_ARM *arm)
     Savegame_Legacy_Write(&frame_base, sizeof(int32_t));
     Savegame_Legacy_Write(&arm->frame_number, sizeof(int16_t));
     Savegame_Legacy_Write(&arm->lock, sizeof(int16_t));
-    Savegame_Legacy_Write(&arm->y_rot, sizeof(PHD_ANGLE));
-    Savegame_Legacy_Write(&arm->x_rot, sizeof(PHD_ANGLE));
-    Savegame_Legacy_Write(&arm->z_rot, sizeof(PHD_ANGLE));
+    Savegame_Legacy_Write(&arm->rot.y, sizeof(PHD_ANGLE));
+    Savegame_Legacy_Write(&arm->rot.x, sizeof(PHD_ANGLE));
+    Savegame_Legacy_Write(&arm->rot.z, sizeof(PHD_ANGLE));
     Savegame_Legacy_Write(&arm->flash_gun, sizeof(int16_t));
 }
 
@@ -379,9 +379,9 @@ static void Savegame_Legacy_ReadArm(LARA_ARM *arm)
 
     Savegame_Legacy_Read(&arm->frame_number, sizeof(int16_t));
     Savegame_Legacy_Read(&arm->lock, sizeof(int16_t));
-    Savegame_Legacy_Read(&arm->y_rot, sizeof(PHD_ANGLE));
-    Savegame_Legacy_Read(&arm->x_rot, sizeof(PHD_ANGLE));
-    Savegame_Legacy_Read(&arm->z_rot, sizeof(PHD_ANGLE));
+    Savegame_Legacy_Read(&arm->rot.y, sizeof(PHD_ANGLE));
+    Savegame_Legacy_Read(&arm->rot.x, sizeof(PHD_ANGLE));
+    Savegame_Legacy_Read(&arm->rot.z, sizeof(PHD_ANGLE));
     Savegame_Legacy_Read(&arm->flash_gun, sizeof(int16_t));
 }
 
