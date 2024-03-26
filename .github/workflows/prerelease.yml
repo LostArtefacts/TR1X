@@ -1,0 +1,18 @@
+name: Publish a pre-release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branch: develop
+
+jobs:
+  publish_prerelease:
+    name: 'Create a prerelease'
+    uses: ./.github/workflows/release.yml
+    with:
+      release_name: 'Development snapshot'
+      draft: false
+      prerelease: true
+      tag_name: latest
