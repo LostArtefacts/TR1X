@@ -104,13 +104,13 @@ void Gun_Rifle_UndrawMeshes(void)
 void Gun_Rifle_Ready(void)
 {
     g_Lara.gun_status = LGS_READY;
-    g_Lara.left_arm.x_rot = 0;
-    g_Lara.left_arm.y_rot = 0;
-    g_Lara.left_arm.z_rot = 0;
+    g_Lara.left_arm.rot.x = 0;
+    g_Lara.left_arm.rot.y = 0;
+    g_Lara.left_arm.rot.z = 0;
     g_Lara.left_arm.lock = 0;
-    g_Lara.right_arm.x_rot = 0;
-    g_Lara.right_arm.y_rot = 0;
-    g_Lara.right_arm.z_rot = 0;
+    g_Lara.right_arm.rot.x = 0;
+    g_Lara.right_arm.rot.y = 0;
+    g_Lara.right_arm.rot.z = 0;
     g_Lara.right_arm.lock = 0;
     g_Lara.head_x_rot = 0;
     g_Lara.head_y_rot = 0;
@@ -134,8 +134,8 @@ void Gun_Rifle_Control(LARA_GUN_TYPE weapon_type)
     Gun_AimWeapon(winfo, &g_Lara.left_arm);
 
     if (g_Lara.left_arm.lock) {
-        g_Lara.torso_y_rot = g_Lara.left_arm.y_rot / 2;
-        g_Lara.torso_x_rot = g_Lara.left_arm.x_rot / 2;
+        g_Lara.torso_y_rot = g_Lara.left_arm.rot.y / 2;
+        g_Lara.torso_x_rot = g_Lara.left_arm.rot.x / 2;
         if (g_Camera.type != CAM_LOOK) {
             g_Lara.head_x_rot = 0;
             g_Lara.head_y_rot = 0;
@@ -250,8 +250,8 @@ void Gun_Rifle_Fire(void)
     PHD_ANGLE angles[2];
     PHD_ANGLE dangles[2];
 
-    angles[0] = g_Lara.left_arm.y_rot + g_LaraItem->rot.y;
-    angles[1] = g_Lara.left_arm.x_rot;
+    angles[0] = g_Lara.left_arm.rot.y + g_LaraItem->rot.y;
+    angles[1] = g_Lara.left_arm.rot.x;
 
     for (int i = 0; i < SHOTGUN_AMMO_CLIP; i++) {
         dangles[0] = angles[0]

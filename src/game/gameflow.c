@@ -14,7 +14,6 @@
 #include "game/phase/phase_picture.h"
 #include "game/phase/phase_stats.h"
 #include "game/room.h"
-#include "global/const.h"
 #include "global/vars.h"
 #include "json/json_base.h"
 #include "json/json_parse.h"
@@ -70,7 +69,8 @@ static GAME_STRING_ID GameFlow_StringToGameStringID(const char *str)
         { "DETAIL_LEVEL_HIGH", GS_DETAIL_LEVEL_HIGH },
         { "DETAIL_LEVEL_MEDIUM", GS_DETAIL_LEVEL_MEDIUM },
         { "DETAIL_LEVEL_LOW", GS_DETAIL_LEVEL_LOW },
-        { "DETAIL_PERSPECTIVE", GS_DETAIL_PERSPECTIVE },
+        { "DETAIL_FPS", GS_DETAIL_FPS },
+        { "DETAIL_DECIMAL_FMT", GS_DETAIL_DECIMAL_FMT },
         { "DETAIL_BILINEAR", GS_DETAIL_BILINEAR },
         { "DETAIL_TEXTURE_FILTER", GS_DETAIL_TEXTURE_FILTER },
         { "DETAIL_FBO_FILTER", GS_DETAIL_FBO_FILTER },
@@ -82,6 +82,7 @@ static GAME_STRING_ID GameFlow_StringToGameStringID(const char *str)
         { "DETAIL_RENDER_MODE_LEGACY", GS_DETAIL_RENDER_MODE_LEGACY },
         { "DETAIL_RENDER_MODE_FBO", GS_DETAIL_RENDER_MODE_FBO },
         { "DETAIL_RESOLUTION", GS_DETAIL_RESOLUTION },
+        { "DETAIL_PERSPECTIVE", GS_DETAIL_PERSPECTIVE },
         { "DETAIL_STRING_FMT", GS_DETAIL_STRING_FMT },
         { "DETAIL_FLOAT_FMT", GS_DETAIL_FLOAT_FMT },
         { "DETAIL_RESOLUTION_FMT", GS_DETAIL_RESOLUTION_FMT },
@@ -254,7 +255,7 @@ static bool GameFlow_LoadScriptMeta(struct json_object_s *obj)
         LOG_ERROR("'demo_delay' must be a positive number");
         return false;
     }
-    g_GameFlow.demo_delay = tmp_d * FRAMES_PER_SECOND;
+    g_GameFlow.demo_delay = tmp_d;
 
     g_GameFlow.force_game_modes =
         GameFlow_ReadTristateBool(obj, "force_game_modes");

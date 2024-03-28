@@ -1034,7 +1034,7 @@ typedef enum GAME_STRING_ID {
     GS_DETAIL_LEVEL_HIGH,
     GS_DETAIL_LEVEL_MEDIUM,
     GS_DETAIL_LEVEL_LOW,
-    GS_DETAIL_PERSPECTIVE,
+    GS_DETAIL_FPS,
     GS_DETAIL_BILINEAR,
     GS_DETAIL_TEXTURE_FILTER,
     GS_DETAIL_FBO_FILTER,
@@ -1046,7 +1046,9 @@ typedef enum GAME_STRING_ID {
     GS_DETAIL_RENDER_MODE_LEGACY,
     GS_DETAIL_RENDER_MODE_FBO,
     GS_DETAIL_RESOLUTION,
+    GS_DETAIL_PERSPECTIVE,
     GS_DETAIL_STRING_FMT,
+    GS_DETAIL_DECIMAL_FMT,
     GS_DETAIL_FLOAT_FMT,
     GS_DETAIL_RESOLUTION_FMT,
 
@@ -1428,6 +1430,13 @@ typedef struct ITEM_INFO {
     uint16_t hit_status : 1;
     uint16_t collidable : 1;
     uint16_t looked_at : 1;
+
+    struct {
+        struct {
+            XYZ_32 pos;
+            XYZ_16 rot;
+        } result, prev;
+    } interp;
 } ITEM_INFO;
 
 typedef struct CINE_CAMERA {
@@ -1450,10 +1459,14 @@ typedef struct LARA_ARM {
     int16_t *frame_base;
     int16_t frame_number;
     int16_t lock;
-    PHD_ANGLE y_rot;
-    PHD_ANGLE x_rot;
-    PHD_ANGLE z_rot;
+    XYZ_16 rot;
     uint16_t flash_gun;
+
+    struct {
+        struct {
+            XYZ_16 rot;
+        } result, prev;
+    } interp;
 } LARA_ARM;
 
 typedef struct AMMO_INFO {
@@ -1817,7 +1830,6 @@ typedef struct CAMERA_INFO {
     int32_t shift;
     int32_t flags;
     int32_t fixed_camera;
-    int32_t number_frames;
     int32_t bounce;
     int32_t underwater;
     int32_t target_distance;
@@ -1836,6 +1848,14 @@ typedef struct CAMERA_INFO {
     // used for the manual camera control
     int16_t additional_angle;
     int16_t additional_elevation;
+
+    struct {
+        struct {
+            XYZ_32 target;
+            XYZ_32 pos;
+            int32_t shift;
+        } result, prev;
+    } interp;
 } CAMERA_INFO;
 
 typedef struct ANIM_STRUCT {

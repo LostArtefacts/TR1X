@@ -1,6 +1,8 @@
 #include "game/phase/phase.h"
 
+#include "config.h"
 #include "game/clock.h"
+#include "game/interpolation.h"
 #include "game/output.h"
 #include "game/phase/phase_cutscene.h"
 #include "game/phase/phase_game.h"
@@ -111,10 +113,7 @@ static int32_t Phase_Wait(void)
     if (m_Phaser && m_Phaser->wait) {
         return m_Phaser->wait();
     } else {
-        int32_t nframes = Clock_SyncTicks();
-        Output_AnimateFades(nframes);
-        g_Camera.number_frames = nframes;
-        return nframes;
+        return Clock_SyncTicks();
     }
 }
 
@@ -123,10 +122,15 @@ GAMEFLOW_OPTION Phase_Run(void)
     int32_t nframes = Clock_SyncTicks();
     GAMEFLOW_OPTION ret = GF_PHASE_CONTINUE;
     m_Running = true;
+
     while (1) {
         ret = Phase_Control(nframes);
-        Phase_Draw();
-        Output_DumpScreen();
+
+        if (Interpolation_IsEnabled()) {
+            Clock_SetTickProgress(0.5);
+            Phase_Draw();
+            Output_DumpScreen();
+        }
 
         if (m_PhaseToSet != PHASE_NULL) {
             Phase_SetUnconditionally(m_PhaseToSet, m_PhaseToSetArg);
@@ -136,12 +140,22 @@ GAMEFLOW_OPTION Phase_Run(void)
                 break;
             }
             nframes = 2;
-        } else {
-            if (ret != GF_PHASE_CONTINUE) {
-                break;
-            }
-            nframes = Phase_Wait();
+            // immediately advance to the next logic frame without any wait
+            continue;
         }
+
+        if (ret != GF_PHASE_CONTINUE) {
+            break;
+        }
+
+        if (Interpolation_IsEnabled()) {
+            Phase_Wait();
+        }
+
+        Clock_SetTickProgress(1.0);
+        Phase_Draw();
+        Output_DumpScreen();
+        nframes = Phase_Wait();
     }
 
     if (ret == GF_PHASE_BREAK) {

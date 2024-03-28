@@ -35,11 +35,7 @@ void Lara_Draw(ITEM_INFO *item)
         int32_t frac = Item_GetFrames(item, frmptr, &rate);
         if (frac) {
             Lara_Draw_I(item, frmptr[0], frmptr[1], frac, rate);
-            g_PhdLeft = left;
-            g_PhdRight = right;
-            g_PhdTop = top;
-            g_PhdBottom = bottom;
-            return;
+            goto end;
         }
     }
 
@@ -70,9 +66,14 @@ void Lara_Draw(ITEM_INFO *item)
     saved_matrix = *g_MatrixPtr;
 
     Output_DrawShadow(object->shadow_size, frame, item);
+
     Matrix_Push();
-    Matrix_TranslateAbs(item->pos.x, item->pos.y, item->pos.z);
-    Matrix_RotYXZ(item->rot.y, item->rot.x, item->rot.z);
+    Matrix_TranslateAbs(
+        item->interp.result.pos.x, item->interp.result.pos.y,
+        item->interp.result.pos.z);
+    Matrix_RotYXZ(
+        item->interp.result.rot.y, item->interp.result.rot.x,
+        item->interp.result.rot.z);
 
     int32_t clip = Output_GetObjectBounds(frame);
     if (!clip) {
@@ -204,8 +205,9 @@ void Lara_Draw(ITEM_INFO *item)
                                           * (object->nmeshes * 2 + FRAME_ROT)
                                       + 10);
         Matrix_RotYXZ(
-            g_Lara.right_arm.y_rot, g_Lara.right_arm.x_rot,
-            g_Lara.right_arm.z_rot);
+            g_Lara.right_arm.interp.result.rot.y,
+            g_Lara.right_arm.interp.result.rot.x,
+            g_Lara.right_arm.interp.result.rot.z);
         Matrix_RotYXZpack(packed_rotation[LM_UARM_R]);
         Output_DrawPolygons(g_Lara.mesh_ptrs[LM_UARM_R], clip);
 
@@ -242,8 +244,9 @@ void Lara_Draw(ITEM_INFO *item)
                                           * (object->nmeshes * 2 + FRAME_ROT)
                                       + 10);
         Matrix_RotYXZ(
-            g_Lara.left_arm.y_rot, g_Lara.left_arm.x_rot,
-            g_Lara.left_arm.z_rot);
+            g_Lara.left_arm.interp.result.rot.y,
+            g_Lara.left_arm.interp.result.rot.x,
+            g_Lara.left_arm.interp.result.rot.z);
         Matrix_RotYXZpack(packed_rotation[LM_UARM_L]);
         Output_DrawPolygons(g_Lara.mesh_ptrs[LM_UARM_L], clip);
 
@@ -320,6 +323,8 @@ void Lara_Draw(ITEM_INFO *item)
 
     Matrix_Pop();
     Matrix_Pop();
+
+end:
     g_PhdLeft = left;
     g_PhdRight = right;
     g_PhdTop = top;
@@ -338,9 +343,14 @@ void Lara_Draw_I(
     saved_matrix = *g_MatrixPtr;
 
     Output_DrawShadow(object->shadow_size, bounds, item);
+
     Matrix_Push();
-    Matrix_TranslateAbs(item->pos.x, item->pos.y, item->pos.z);
-    Matrix_RotYXZ(item->rot.y, item->rot.x, item->rot.z);
+    Matrix_TranslateAbs(
+        item->interp.result.pos.x, item->interp.result.pos.y,
+        item->interp.result.pos.z);
+    Matrix_RotYXZ(
+        item->interp.result.rot.y, item->interp.result.rot.x,
+        item->interp.result.rot.z);
 
     int32_t clip = Output_GetObjectBounds(frame1);
     if (!clip) {
@@ -480,8 +490,9 @@ void Lara_Draw_I(
                                            * (object->nmeshes * 2 + FRAME_ROT)
                                        + 10);
         Matrix_RotYXZ(
-            g_Lara.right_arm.y_rot, g_Lara.right_arm.x_rot,
-            g_Lara.right_arm.z_rot);
+            g_Lara.right_arm.interp.result.rot.y,
+            g_Lara.right_arm.interp.result.rot.x,
+            g_Lara.right_arm.interp.result.rot.z);
         Matrix_RotYXZpack(packed_rotation1[LM_UARM_R]);
         Output_DrawPolygons(g_Lara.mesh_ptrs[LM_UARM_R], clip);
 
@@ -509,8 +520,9 @@ void Lara_Draw_I(
                                            * (object->nmeshes * 2 + FRAME_ROT)
                                        + 10);
         Matrix_RotYXZ(
-            g_Lara.left_arm.y_rot, g_Lara.left_arm.x_rot,
-            g_Lara.left_arm.z_rot);
+            g_Lara.left_arm.interp.result.rot.y,
+            g_Lara.left_arm.interp.result.rot.x,
+            g_Lara.left_arm.interp.result.rot.z);
         Matrix_RotYXZpack(packed_rotation1[LM_UARM_L]);
         Output_DrawPolygons(g_Lara.mesh_ptrs[LM_UARM_L], clip);
 

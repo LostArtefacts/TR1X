@@ -4,6 +4,7 @@
 #include "game/effects.h"
 #include "game/game.h"
 #include "game/input.h"
+#include "game/interpolation.h"
 #include "game/inventory.h"
 #include "game/items.h"
 #include "game/lara.h"
@@ -22,30 +23,34 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static const int32_t m_AnimationRate = 0x8000;
-static int32_t m_FrameCount = 0;
-
 static void Phase_Game_Start(void *arg);
+static void Phase_Game_End(void);
 static GAMEFLOW_OPTION Phase_Game_Control(int32_t nframes);
 static void Phase_Game_Draw(void);
 
 static void Phase_Game_Start(void *arg)
 {
+    Interpolation_Enable();
+    Interpolation_Remember();
     if (Phase_Get() != PHASE_PAUSE) {
         Output_FadeReset();
-        Output_FadeSetSpeed(1.0);
     }
+}
+
+static void Phase_Game_End(void)
+{
+    Interpolation_Disable();
 }
 
 static GAMEFLOW_OPTION Phase_Game_Control(int32_t nframes)
 {
+    Interpolation_Remember();
     GAMEFLOW_OPTION return_val = GF_PHASE_CONTINUE;
     if (nframes > MAX_FRAMES) {
         nframes = MAX_FRAMES;
     }
 
-    m_FrameCount += m_AnimationRate * nframes;
-    while (m_FrameCount >= 0) {
+    for (int i = 0; i < nframes; i++) {
         Lara_CheckCheatMode();
         if (g_LevelComplete) {
             return GF_PHASE_BREAK;
@@ -124,8 +129,6 @@ static GAMEFLOW_OPTION Phase_Game_Control(int32_t nframes)
             g_GameInfo.current[g_CurrentLevel].stats.timer++;
             Overlay_BarHealthTimerTick();
         }
-
-        m_FrameCount -= 0x10000;
     }
 
     if (g_GameInfo.ask_for_save) {
@@ -139,13 +142,14 @@ static GAMEFLOW_OPTION Phase_Game_Control(int32_t nframes)
 static void Phase_Game_Draw(void)
 {
     Game_DrawScene(true);
-    Output_AnimateTextures(g_Camera.number_frames);
+    Output_AnimateTextures();
+    Output_AnimateFades();
     Text_Draw();
 }
 
 PHASER g_GamePhaser = {
     .start = Phase_Game_Start,
-    .end = NULL,
+    .end = Phase_Game_End,
     .control = Phase_Game_Control,
     .draw = Phase_Game_Draw,
     .wait = NULL,

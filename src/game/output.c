@@ -1,6 +1,7 @@
 #include "game/output.h"
 
 #include "config.h"
+#include "game/clock.h"
 #include "game/console.h"
 #include "game/overlay.h"
 #include "game/picture.h"
@@ -26,8 +27,8 @@ static int m_OverlayCurAlpha = 0;
 static int m_OverlayDstAlpha = 0;
 static int m_BackdropCurAlpha = 0;
 static int m_BackdropDstAlpha = 0;
-static double m_FadeSpeed = 1.0;
 
+static int32_t m_LastFrame = 0;
 static int32_t m_WibbleOffset = 0;
 static int32_t m_WibbleTable[WIBBLE_SIZE] = { 0 };
 static int32_t m_ShadeTable[WIBBLE_SIZE] = { 0 };
@@ -582,7 +583,8 @@ void Output_DrawShadow(int16_t size, int16_t *bptr, ITEM_INFO *item)
     }
 
     Matrix_Push();
-    Matrix_TranslateAbs(item->pos.x, item->floor, item->pos.z);
+    Matrix_TranslateAbs(
+        item->interp.result.pos.x, item->floor, item->interp.result.pos.z);
     Matrix_RotY(item->rot.y);
 
     if (Output_CalcObjectVertices(&g_ShadowInfo.poly_count)) {
@@ -893,13 +895,13 @@ void Output_SetupAboveWater(bool underwater)
     m_IsShadeEffect = underwater;
 }
 
-void Output_AnimateFades(int ticks)
+void Output_AnimateFades(void)
 {
     if (!g_Config.enable_fade_effects) {
         return;
     }
 
-    const int delta = 5 * m_FadeSpeed * ticks;
+    int32_t delta = 10.0 * Clock_GetFrameAdvanceAdjusted();
     if (m_OverlayCurAlpha + delta <= m_OverlayDstAlpha) {
         m_OverlayCurAlpha += delta;
     } else if (m_OverlayCurAlpha - delta >= m_OverlayDstAlpha) {
@@ -916,18 +918,17 @@ void Output_AnimateFades(int ticks)
     }
 }
 
-void Output_AnimateTextures(int32_t ticks)
+void Output_AnimateTextures(void)
 {
-    m_WibbleOffset = (m_WibbleOffset + ticks / TICKS_PER_FRAME) % WIBBLE_SIZE;
-
-    static int32_t tick_comp = 0;
-    tick_comp += ticks;
+    m_WibbleOffset = Clock_GetLogicalFrame() % WIBBLE_SIZE;
 
     if (!g_AnimTextureRanges) {
         return;
     }
 
-    while (tick_comp > TICKS_PER_FRAME * 5) {
+    const int32_t frame = Clock_GetLogicalFrame();
+    const int32_t offset = frame % 5;
+    if (offset == 0 && frame != m_LastFrame) {
         int16_t *ptr = g_AnimTextureRanges;
         int16_t i = *ptr++;
         while (i > 0) {
@@ -942,8 +943,8 @@ void Output_AnimateTextures(int32_t ticks)
             i--;
             ptr++;
         }
-        tick_comp -= TICKS_PER_FRAME * 5;
     }
+    m_LastFrame = frame;
 }
 
 void Output_RotateLight(int16_t pitch, int16_t yaw)
@@ -996,11 +997,6 @@ void Output_FadeReset(void)
     m_OverlayCurAlpha = 0;
     m_BackdropDstAlpha = 0;
     m_OverlayDstAlpha = 0;
-}
-
-void Output_FadeSetSpeed(double speed)
-{
-    m_FadeSpeed = speed;
 }
 
 void Output_FadeResetToBlack(void)

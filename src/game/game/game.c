@@ -6,6 +6,7 @@
 #include "game/gameflow.h"
 #include "game/input.h"
 #include "game/inventory.h"
+#include "game/items.h"
 #include "game/lara.h"
 #include "game/level.h"
 #include "game/music.h"
@@ -22,8 +23,8 @@
         Game_DrawScene(true);                                                  \
         Input_Update();                                                        \
         Output_DumpScreen();                                                   \
-        int ticks = Clock_SyncTicks();                                         \
-        Output_AnimateFades(ticks);                                            \
+        Output_AnimateFades();                                                 \
+        Clock_SyncTicks();                                                     \
     } while (g_Input.key);
 
 void Game_ProcessInput(void)

@@ -150,12 +150,13 @@ typedef struct {
         int32_t window_y;
         int32_t window_width;
         int32_t window_height;
-        bool enable_perspective_filter;
+        int32_t fps;
         GFX_TEXTURE_FILTER texture_filter;
         GFX_TEXTURE_FILTER fbo_filter;
         bool enable_vsync;
         bool enable_fps_counter;
         float anisotropy_filter;
+        bool enable_perspective_filter;
     } rendering;
 
     struct {
